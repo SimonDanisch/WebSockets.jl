@@ -6,19 +6,20 @@ if !@isdefined(SRCPATH)
     SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
     LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
 end
+import WebSockets: WebSocket
 using logutils_ws
 
 "A list of potentially available browsers, to be tried in succession if present"
 const BROWSERS = ["chrome", "firefox", "iexplore", "safari", "phantomjs"]
-"An complicated browser counter."
+"A complicated browser counter."
 mutable struct Countbrowser;value::Int;end
 (c::Countbrowser)() =COUNTBROWSER.value += 1
-"For next value: COUNTBROWSER(). For current value: COUNTBROWSER.value"
+"To get next value: COUNTBROWSER(). To get current value: COUNTBROWSER.value"
 const COUNTBROWSER = Countbrowser(0)
 const PORT = [8000]
 const PAGE = ["bce.html"]
-const URL = ["http://127.0.0.1:$(PORT[1])/$(PAGE[1])"]
-
+#const URL = ["http://127.0.0.1:$(PORT[1])/$(PAGE[1])"]
+const URL = "http://127.0.0.1:$(PORT[1])/$(PAGE[1])"
 
 
 "Get application path for developer applications"
@@ -105,7 +106,7 @@ function browser_path_windows(shortname)
 end
 "Constructs launch command"
 function launch_command(shortbrowsername)
-    if Sys.is_windows()
+    if Sys.iswindows()
         pt = browser_path_windows(shortbrowsername)
     else
         pt = browser_path_unix_apple(shortbrowsername)
@@ -124,12 +125,12 @@ function launch_command(shortbrowsername)
         end
         return Cmd(`$pt $script $URL`)
     else
-        if Sys.is_windows()
+        if Sys.iswindows()
             return Cmd( [ pt, URL, prsw])
         else
-            if Sys.is_apple()
+            if Sys.isapple()
                 return Cmd(`open --fresh -n $URL -a $pt --args $prsw`)
-            elseif Sys.is_linux() || Sys.is_bsd()
+            elseif Sys.islinux() || Sys.isbsd()
                 return Cmd(`xdg-open $(URL) $pt`)
             end
         end
@@ -150,10 +151,11 @@ function open_testpage(shortbrowsername)
                 # standalone REPL, run will freeze the main thread if not run async.
                 @async run(dmc)
             else
-                spawn(dmc)
+                #spawn(dmc)
+                run(dmc, wait = false)
             end
         catch
-            clog(id, :red, "Failed to spawn " * shortbrowsername)
+            clog(id, :red, "Failed to run ", :bold, shortbrowsername, " asyncronously.")
             return false
         end
     end

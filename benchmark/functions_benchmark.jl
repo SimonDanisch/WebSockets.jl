@@ -1,6 +1,10 @@
 # Included in benchmark.jl
 using Distributed
 using Dates
+import Millboard.table
+import UnicodePlots: lineplot
+tabulate(vars) = table(hcat(eval.(vars)...), colnames = string.(vars))
+
 "Adds process 2, same LOAD_PATH as process 1"
 function prepareworker()
     # Prepare worker

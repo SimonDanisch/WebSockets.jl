@@ -7,8 +7,8 @@ LOAD_PATH must include the directory logutils_ws.
 See comment at the end of this file for debugging code.
 """
 module ws_jce
-using ..HTTP
-using ..WebSockets
+#using ..HTTP
+#using ..WebSockets
 # We want to log to a separate file, and so use our own
 # instance of logutils_ws in this process
 import logutils_ws: logto, clog, zlog, zflush, clog_notime
@@ -17,7 +17,8 @@ const LOGFILE = "ws_jce.log"
 
 const PORT = 8000
 const SERVER = "ws://127.0.0.1:$(PORT)"
-const CLOSEAFTER = Base.Dates.Second(30)
+using Dates
+const CLOSEAFTER = Second(30)
 
 """
 Opens a client, echoes with an optional delay, an integer in milliseconds.
@@ -122,7 +123,7 @@ end # module
 #=
 For debugging in a separate terminal:
 
-using WebSockets
+using WebSockets (TODO: update to Julia 0.7)
 const SRCPATH = Base.source_dir() == nothing ? Pkg.dir("WebSockets", "benchmark") :Base.source_dir()
 const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
 # for finding local modules

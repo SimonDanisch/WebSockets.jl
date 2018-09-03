@@ -1,6 +1,6 @@
 __precompile__()
 #=
- TODO deal with Julia 0.7 warning: 
+ TODO deal with Julia 0.7 warning:
     Warning: broadcast will default to iterating over its arguments in the future. Wrap arguments of
      type `x::logutils_ws.ColorDevice{Base.GenericIOBuffer{Array{UInt8,1}}}` with `Ref(x)` to ensure they broadcast as "scalar" elements.
  TODO consider using Memento.jl in an example application, and to define show(IO, ::WebSocket)
@@ -33,8 +33,6 @@ import Base.text_colors
 import Base.color_normal
 import Base.text_colors
 import Base.show
-include("log_http.jl")
-include("log_ws.jl")
 export clog
 export clog_notime
 export zlog
@@ -399,6 +397,8 @@ function directto_abstractdevice(io::IO, obj)
     write(io, take!(buf.s))
     nothing
 end
+include("log_http.jl")
+include("log_ws.jl")
 
 nothing
 end # module

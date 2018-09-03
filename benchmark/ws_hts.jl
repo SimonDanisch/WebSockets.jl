@@ -5,26 +5,33 @@
 # running echo tests with that client.
 # The server stays open until close_hts or the websocket is closed.
 module ws_hts
-using ..HTTP
-import HTTP.Header
-using ..WebSockets
+#using ..HTTP
+import HTTP: Header,
+             Sockets.TCPServer,
+             listen,
+             Servers.handle_request,
+             Request,
+             Response
+import WebSockets: WebSocket,
+            origin
+using Dates
 # We want to log to a separate file, so
-# we use our own instance of logutils_ws here.
+# we use our own instance of logutils_ws here (not really working...? Check this!).
 import logutils_ws: logto, clog, zlog, zflush, clog_notime
 const SRCPATH = Base.source_dir() == nothing ? Pkg.dir("WebSockets", "benchmark") : Base.source_dir()
 const SERVEFILE = "bce.html"
 const PORT = 8000
 const SERVER = "127.0.0.1"
-const WSMAXTIME = Base.Dates.Second(600)
-const WEBSOCKET = Vector{WebSockets.WebSocket}()
-const TCPREF = Ref{HTTP.Sockets.TCPServer}()
+const WSMAXTIME = Second(600)
+const WEBSOCKET = Vector{WebSocket}()
+const TCPREF = Ref{TCPServer}()
 "Run asyncronously or in separate process"
 function listen_hts()
     id = "listen_hts"
     try
         clog(id,"listen_hts starts on ", SERVER, ":", PORT)
         zflush()
-        HTTP.listen(SERVER, UInt16(PORT), tcpref = TCPREF) do http
+        listen(SERVER, UInt16(PORT), tcpref = TCPREF) do http
             if WebSockets.is_upgrade(http.message)
                 acceptholdws(http)
                 clog(id, "Websocket closed, server stays open until ws_hts.close_hts()")
@@ -96,7 +103,7 @@ end
 
 
 "HTTP request -> HTTP response."
-function handlerequest(request::HTTP.Request)
+function handlerequest(request::Request)
     id = "handlerequest"
     zlog(id, request)
     response = responseskeleton(request)
@@ -119,7 +126,7 @@ end
 """
 Tell browser about the methods this server supports.
 """
-function responseskeleton(request::HTTP.Request)
+function responseskeleton(request::Request)
     r = HTTP.Response()
     HTTP.Messages.appendheader(r, Header("Allow" => "GET,HEAD"))
     HTTP.Messages.appendheader(r, Header("Connection" => "close"))
@@ -127,7 +134,7 @@ function responseskeleton(request::HTTP.Request)
 end
 
 "request.target -> HTTP.Response , building on a skeleton response"
-function resp_HTTP(resource::String, resp::HTTP.Response)
+function resp_HTTP(resource::String, resp::Response)
     id = "resp_HTTP"
     if resource == "/favicon.ico"
         s = read(joinpath(SRCPATH, "favicon.ico"))
@@ -151,7 +158,7 @@ end
 
 end # module
 """
-For debugging:
+For debugging (TODO: update this to Julia 0.7)
 
 import HTTP
 using WebSockets

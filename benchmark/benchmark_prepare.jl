@@ -26,16 +26,18 @@ include(joinpath(SRCPATH, "functions_benchmark.jl"))
 #
 prepareworker()
 # Load modules on both processes
-import HTTP
-using WebSockets
+#import HTTP
+import WebSockets: WebSocket
 using ws_jce
-using UnicodePlots
-import IndexedTables.table
+import UnicodePlots: lineplot
+using Dates
+#import IndexedTables.table
+import Millboard.table
 import ws_hts: listen_hts, getws_hts
 #
 remotecall_fetch(ws_jce.clog, 2, "ws_jce ", :green, " is ready")
 # Start async HTS server on this process and check that it is up and running
-const TIMEOUT = Base.Dates.Second(20)
+const TIMEOUT = Second(20)
 hts_task = start_hts(TIMEOUT)
 
 """
@@ -73,7 +75,8 @@ const INITN = 200
 # Store plots and a table in dictionaries
 vars= [:serverspeeds, :clientspeeds];
 init_plots = Dict(testid => lp(vars, testid));
-init_tables = Dict(testid => table(eval.(vars)..., names = vars));
+#init_tables = Dict(testid => table(eval.(vars)..., names = vars));
+init_tables = Dict(testid => tabulate(vars));
 init_serverbandwidths = Dict(testid => serverbandwidth);
 init_clientbandwidths = Dict(testid => clientbandwidth);
 # Sleep to avoid interspersing with worker output to REPL
@@ -111,7 +114,9 @@ while success
         # Store plots and a table in dictionaries
         testid = "HTS_BCE " * browser
         push!(init_plots, testid => lp(vars, testid));
-        push!(init_tables, testid => table(eval.(vars)..., names = vars));
+        #push!(init_tables, testid => table(eval.(vars)..., names = vars));
+        push!(init_tables, testid => tabulate(vars));
+
         push!(init_serverbandwidths, testid => serverbandwidth);
         push!(init_clientbandwidths, testid => clientbandwidth);
         # Brief output to file and console
@@ -232,7 +237,8 @@ for testid in keys(serverbandwidths)
     vars = [:serverbandwidth, :clientbandwidth]
     tvars = vcat([:VSIZE], vars)
     push!(test_plots,  testid => lp([:VSIZE, :VSIZE], vars, testid));
-    push!(test_tables,  testid => table(eval.(tvars)..., names = tvars));
+    push!(test_tables,  testid => tabulate(tvars));
+
     # Store msgsiz-latency line plots and tables in dictionaries
     serverlatency = serverbandwidth .* VSIZE
     clientlatency = clientbandwidth .* VSIZE
@@ -243,7 +249,7 @@ for testid in keys(serverbandwidths)
     vars = [:serverlatency, :clientlatency]
     tvars = vcat([:VSIZE], vars)
     push!(test_latency_plots,  testid => lp([:VSIZE, :VSIZE], vars, testid));
-    push!(test_latency_tables,  testid => table(eval.(tvars)..., names = tvars));
+    push!(test_latency_tables,  testid => tabulate(tvars));
 
     # Brief output to file and console
     clog_notime(testid, :normal, " Varying message size: \n\t",
