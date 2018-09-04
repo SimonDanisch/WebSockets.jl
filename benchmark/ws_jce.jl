@@ -12,7 +12,15 @@ module ws_jce
 # We want to log to a separate file, and so use our own
 # instance of logutils_ws in this process
 import logutils_ws: logto, clog, zlog, zflush, clog_notime
-const SRCPATH = Base.source_dir() == nothing ? Pkg.dir("WebSockets", "benchmark") : Base.source_dir()
+import Base.open
+using Serialization
+if !@isdefined(SRCPATH)
+    import WebSockets
+    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
+    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
+    SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
+    LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
+end
 const LOGFILE = "ws_jce.log"
 
 const PORT = 8000
@@ -123,13 +131,15 @@ end # module
 #=
 For debugging in a separate terminal:
 
-using WebSockets (TODO: update to Julia 0.7)
-const SRCPATH = Base.source_dir() == nothing ? Pkg.dir("WebSockets", "benchmark") :Base.source_dir()
-const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
-# for finding local modules
-SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
-LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
+import WebSockets:WebSocket
+if !@isdefined(SRCPATH)
+    import WebSockets.WebSocket
+    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
+    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
+    SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
+    LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
+end
 
 import ws_jce.echowithdelay_jce
-ws_jce.echowithdelay_jce()
+echowithdelay_jce()
 =#

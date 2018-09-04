@@ -11,14 +11,25 @@ import HTTP: Header,
              listen,
              Servers.handle_request,
              Request,
-             Response
+             Response,
+             Servers.handle_request,
+             Messages.appendheader
 import WebSockets: WebSocket,
-            origin
+            origin,
+            is_upgrade,
+			upgrade
 using Dates
 # We want to log to a separate file, so
 # we use our own instance of logutils_ws here (not really working...? Check this!).
 import logutils_ws: logto, clog, zlog, zflush, clog_notime
-const SRCPATH = Base.source_dir() == nothing ? Pkg.dir("WebSockets", "benchmark") : Base.source_dir()
+if !@isdefined(SRCPATH)
+    import WebSockets.WebSocket
+    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
+    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
+    SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
+    LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
+end
+
 const SERVEFILE = "bce.html"
 const PORT = 8000
 const SERVER = "127.0.0.1"
@@ -32,11 +43,11 @@ function listen_hts()
         clog(id,"listen_hts starts on ", SERVER, ":", PORT)
         zflush()
         listen(SERVER, UInt16(PORT), tcpref = TCPREF) do http
-            if WebSockets.is_upgrade(http.message)
+            if is_upgrade(http.message)
                 acceptholdws(http)
                 clog(id, "Websocket closed, server stays open until ws_hts.close_hts()")
             else
-                HTTP.Servers.handle_request(handlerequest, http)
+                handle_request(handlerequest, http)
             end
         end
     catch err
@@ -54,7 +65,7 @@ function acceptholdws(http)
     zlog(id);zflush()
     # If the ugrade is successful, just hold the reference and thread
     # of execution. Other tasks may do useful things with it.
-    WebSockets.upgrade(http) do ws
+    upgrade(http) do ws
         if length(WEBSOCKET) > 0
             # unexpected behaviour.
             if !isopen(WEBSOCKET[1])
@@ -114,7 +125,7 @@ function handlerequest(request::Request)
             response = resp_HTTP(request.target, response)
             response.body = Array{UInt8,1}()
         else
-            response = HTTP.Response(501, "Not implemented method: $(request.method), fix $id")
+            response = Response(501, "Not implemented method: $(request.method), fix $id")
         end
     catch
     end
@@ -127,8 +138,8 @@ end
 Tell browser about the methods this server supports.
 """
 function responseskeleton(request::Request)
-    r = HTTP.Response()
-    HTTP.Messages.appendheader(r, Header("Allow" => "GET,HEAD"))
+    r = Response()
+    appendheader(r, Header("Allow" => "GET,HEAD"))
     HTTP.Messages.appendheader(r, Header("Connection" => "close"))
     r #
 end
@@ -158,18 +169,16 @@ end
 
 end # module
 """
-For debugging (TODO: update this to Julia 0.7)
+For debugging in a separate console:
 
-import HTTP
-using WebSockets
-using Dates
-const SRCPATH = Base.source_dir() == nothing ? Pkg.dir("WebSockets", "benchmark") :Base.source_dir()
-const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
-# for finding local modules
-SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
-LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
+if !@isdefined(SRCPATH)
+    import WebSockets.WebSocket
+    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
+    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
+end
+
 import ws_hts.listen_hts
-tas = @async ws_hts.listen_hts()
+tas = @async listen_hts()
 sleep(7)
 hts = ws_hts.getws_hts()
 """

@@ -29,10 +29,12 @@ loaded from separate files with @require. This adds to loading time.
 """
 module logutils_ws
 using Dates
-import Base.text_colors
-import Base.color_normal
-import Base.text_colors
-import Base.show
+import Base: text_colors,
+            color_normal,
+            bytesavailable,
+            text_colors,
+            show
+import Unicode.normalize_string
 export clog
 export clog_notime
 export zlog
@@ -275,7 +277,13 @@ function _show(d::AbstractDevice, di::Dict{String, Function})
 end
 
 
-_pairpad(pa::Pair, plen::Int) = Base.cpad(_limlen(_string(pa), plen) , plen )
+#_pairpad(pa::Pair, plen::Int) = Base.cpad(_limlen(_string(pa), plen) , plen )
+function _pairpad(pa::Pair, plen::Int)
+    s = _limlen(_string(pa), plen)
+    n = div(plen + textwidth(s), 2)
+    rpad(s, n)
+end
+
 _string(pa::Pair) = _string(pa[1]) * " => " * _string(pa[2])
 function _show(d::AbstractDevice, f::Function)
     mt = typeof(f).name.mt
@@ -288,8 +296,8 @@ end
 "Type info not printed here as it is assumed the type is given by the context."
 function _show(d::ColorDevice, stream::Base.LibuvStream)
     _log(d, "(", :bold, _uv_status(stream)..., :normal)
-    nba = Base.nb_available(stream.buffer)
-    nba > 0 && print(d.s, ", ", Base.nb_available(stream.buffer)," bytes waiting")
+    nba = bytesavailable(stream.buffer)
+    nba > 0 && print(d.s, ", ", bytesavailable(stream.buffer)," bytes waiting")
     print(d.s, ")")
     nothing
 end

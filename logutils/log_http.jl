@@ -1,15 +1,17 @@
 #=
 Included in logutils xxx.jl if HTTP is loaded
 =#
-import HTTP.Messages.Response
-import HTTP.Messages.Request
+import HTTP: Messages.Response,
+            Messages.Request,
+            Messages.STATUS_MESSAGES,
+            header
 
 "Response already has a show method, we're not overwriting that.
 This metod is called only when logging to an Abstractdevice. The default
 show method does not print binary data well as per now."
 function _show(d::AbstractDevice, response::Response)
     _log(d, :green, "Response status: ", :bold, response.status," ")
-    response.status > 0 && _log(d, HTTP.Messages.STATUS_MESSAGES[response.status], " ")
+    response.status > 0 && _log(d, STATUS_MESSAGES[response.status], " ")
     if !isempty(response.headers)
         _log(d, :green, " Headers: ", :bold, length(response.headers))
         _log(d, :green, "\n", response.headers)
@@ -21,7 +23,7 @@ function _show(d::AbstractDevice, response::Response)
         end
     end
     if !isempty(response.body)
-        _log(d, "\t", DataDispatch(response.body, HTTP.header(response, "content-type", "")))
+        _log(d, "\t", DataDispatch(response.body, header(response, "content-type", "")))
     end
     nothing
 end

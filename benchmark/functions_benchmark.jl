@@ -1,8 +1,18 @@
 # Included in benchmark.jl
 using Distributed
 using Dates
+using Random
 import Millboard.table
-import UnicodePlots: lineplot
+import UnicodePlots: lineplot,
+                    AsciiCanvas,
+                    title,
+                    title!
+import ws_hts: listen_hts,
+               TCPREF,
+               getws_hts
+import WebSockets: readguarded,
+                   write,
+                   WebSocket
 tabulate(vars) = table(hcat(eval.(vars)...), colnames = string.(vars))
 
 "Adds process 2, same LOAD_PATH as process 1"
@@ -21,11 +31,11 @@ end
 
 "Start and wait for async hts server"
 function start_hts(timeout)
-    hts_task = @async ws_hts.listen_hts()
+    hts_task = @async listen_hts()
     t1 = now() + timeout
     while now() < t1
         sleep(0.5)
-        isdefined(ws_hts.TCPREF, :x) && break
+        isdefined(TCPREF, :x) && break
     end
     if now()>= t1
         msg = " did not establish server before timeout "
@@ -53,7 +63,7 @@ function get_hts_jce()
     t1 = now() + TIMEOUT
     while now() < t1
         yield()
-        hts = ws_hts.getws_hts()
+        hts = getws_hts()
         isa(hts, WebSocket) && break
         sleep(0.5)
     end
@@ -79,7 +89,7 @@ function get_hts_bce()
         t1 = now() + TIMEOUT
         while now() < t1
             yield()
-            hts = ws_hts.getws_hts()
+            hts = getws_hts()
             isa(hts, WebSocket) && break
             sleep(0.5)
         end

@@ -8,7 +8,7 @@ function _show(d::AbstractDevice, ws::WebSocket{T}) where T
     _log(d, "WebSocket{", T, "}(")
     _log(d, ws.server ? "server, " : "client, ")
     _log(d, ws.socket, " ")
-    showcompact(d.s, ws.state)
+    show(IOContext(d.s, :compact => true), ws.state)
     _log(d, ")")
     nothing
 end

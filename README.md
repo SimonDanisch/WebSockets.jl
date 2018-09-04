@@ -75,7 +75,7 @@ You can also have a look at alternative Julia packages: [DandelionWebSockets](ht
 - Garbage collection, which increases message latency at semi-random intervals. See benchmark plots.
 - If a connection is closed improperly, the connection task will throw uncaught ECONNRESET and similar messages.
 - TCP quirks, including 'warm-up' time with low transmission speed after a pause. Heartbeats can alleviate.
-- Since `read` is a blocking function, you can easily end up reading indefinitely from any side of the connection. See the `close function code for an example of non-blocking read with a timeout.
+- Since `read` is a blocking function, you can easily end up reading indefinitely from any side of the connection. See the `close` function code for an example of non-blocking read with a timeout, or check `Base.bytesavailable` before reading.
 
 ## Errors after updating?
 

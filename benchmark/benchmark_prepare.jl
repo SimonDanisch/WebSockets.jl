@@ -9,9 +9,9 @@
 # Pull request welcome if someone can figure out how to do it.
 # Running this file on a Windows laptop with all browsers takes 5-10 minutes.
 
-
-if !isdefined(:SRCPATH)
-    const SRCPATH = Base.source_dir() == nothing ? Pkg.dir("WebSockets", "benchmark") : Base.source_dir()
+if !@isdefined SRCPATH
+    import WebSockets.WebSocket
+    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
     const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
     SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
     LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
@@ -31,6 +31,8 @@ import WebSockets: WebSocket
 using ws_jce
 import UnicodePlots: lineplot
 using Dates
+using Random
+using Serialization
 #import IndexedTables.table
 import Millboard.table
 import ws_hts: listen_hts, getws_hts
@@ -65,6 +67,7 @@ zflush()
 
 const INITSIZE = 130560
 const INITN = 200
+global testid, serverlatencies, clientlatencies
 
 # Measured time interval vectors [ns]
 # Time measurements are taken directly both at server and client
