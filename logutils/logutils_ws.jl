@@ -34,7 +34,7 @@ import Base: text_colors,
             bytesavailable,
             text_colors,
             show
-import Unicode.normalize_string
+import Unicode.normalize
 export clog
 export clog_notime
 export zlog
@@ -351,7 +351,7 @@ function _showdata(d::AbstractDevice, data::Array{UInt8,1}, contenttype::String)
     if occursin(r"(text|script|html|xml|julia|java)", lowercase(contenttype))
         _log(d, :green, "\tData length: ", length(data), " ", :bold, :blue)
         s = data |> String |> _limlen
-        write(d.s, replace(s, r"\s+", " "))
+        write(d.s, replace(s, r"\s+" => " "))
     else
         _log(d, :green, "\tData length: ", length(data), "  ", :blue)
         write(d.s,  data |> _limlen)
@@ -364,14 +364,14 @@ _limlen(data::AbstractString) = _limlen(data, 74)
 function _limlen(data::AbstractString, linelength::Int)
     le = length(data)
    if le <  linelength
-        return  normalize_string(string(data), stripcc = true)
+        return  normalize(string(data), stripcc = true)
     else
         adds = " … "
         addlen = length(adds)
         truncat = 2 * div(linelength, 3)
         tail = linelength - truncat - addlen - 1
         truncstring = String(data)[1:truncat] * adds * String(data)[end-tail:end]
-        return normalize_string(truncstring, stripcc = true)
+        return normalize(truncstring, stripcc = true)
     end
 end
 function _limlen(data::Union{Vector{UInt8}, Vector{Float64}})

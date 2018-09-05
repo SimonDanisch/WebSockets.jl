@@ -87,6 +87,7 @@ if !@isdefined(SRCPATH)
     SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
     LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
     include(joinpath(SRCPATH, "functions_open_browsers.jl"))
+    include(joinpath(SRCPATH, "functions_benchmark.jl"))
 end
 # Don't run this if the output files are recent?
 include("benchmark_prepare.jl")

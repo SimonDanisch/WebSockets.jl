@@ -140,7 +140,7 @@ Tell browser about the methods this server supports.
 function responseskeleton(request::Request)
     r = Response()
     appendheader(r, Header("Allow" => "GET,HEAD"))
-    HTTP.Messages.appendheader(r, Header("Connection" => "close"))
+    appendheader(r, Header("Connection" => "close"))
     r #
 end
 

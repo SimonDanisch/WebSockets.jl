@@ -7,8 +7,6 @@ LOAD_PATH must include the directory logutils_ws.
 See comment at the end of this file for debugging code.
 """
 module ws_jce
-#using ..HTTP
-#using ..WebSockets
 # We want to log to a separate file, and so use our own
 # instance of logutils_ws in this process
 import logutils_ws: logto, clog, zlog, zflush, clog_notime
@@ -89,9 +87,10 @@ function _jce(ws)
         ti = time_ns()
         push!(receivetimes, Int64(ti < typemax(Int64) ? ti : 0 ))
         # break out when receiving 'exit'
-        length(msg) == 4 && msg == Vector{UInt8}("exit") && break
+        # length(msg) == 4 && msg == Vector{UInt8}("exit") && break
+        length(msg) == 4 && msg == codeunits("exit") && break
         # react to delay instruction
-        if length(msg) < 16 && msg[1:6] == Vector{UInt8}("delay=")
+        if length(msg) < 16 && msg[1:6] == codeunits("delay=")
             delay = Meta.parse(Int, String(msg[7:end]))
             clog(id, :green, " Changing delay to ", delay, " ms")
             zflush()
@@ -101,9 +100,10 @@ function _jce(ws)
         replytime = time_ns()
         write(ws, msg)
         # clean record of instruction message
-        if length(msg) > 16 && msg[1:6] != Vector{UInt8}("delay=")
+        #if length(msg) > 16 && msg[1:6] != Vector{UInt8}("delay=")
+        if length(msg) > 16 && msg[1:6] != codeunits("delay=")
             push!(replytimes, Int64(replytime < typemax(Int64) ? replytime : 0 ))
-        elseif msg[1:6] != Vector{UInt8}("delay=")
+        elseif msg[1:6] != codeunits("delay=")
             push!(replytimes,  Int64(replytime < typemax(Int64) ? replytime : 0 ))
         end
     end

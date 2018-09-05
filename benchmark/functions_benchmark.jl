@@ -1,12 +1,13 @@
 # Included in benchmark.jl
 using Distributed
 using Dates
-using Random
+import Random: seed!
 import Millboard.table
 import UnicodePlots: lineplot,
                     AsciiCanvas,
                     title,
-                    title!
+                    title!,
+                    xlabel!
 import ws_hts: listen_hts,
                TCPREF,
                getws_hts
@@ -116,7 +117,7 @@ function HTS_JCE(n, messagesize)
     end
     clog(id, hts)
     # Random seeding, same for all samples
-    srand(1)
+    seed!(1)
     clog(id, "Sending ", n, " messages of ", messagesize , " random bytes")
     sendtime = Int64(0)
     receivereplytime = Int64(0)
@@ -180,7 +181,7 @@ function HTS_BCE(n, x)
     end
     clog(id, hts)
     # Random seeding, same for all samples
-    srand(1)
+    seed!(1)
     clog(id, "Sending ", n, " messages of ", x , " random bytes")
     st1 = UInt64(0)
     st2 = UInt64(0)
