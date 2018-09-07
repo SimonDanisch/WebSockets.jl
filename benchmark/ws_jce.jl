@@ -7,23 +7,21 @@ LOAD_PATH must include the directory logutils_ws.
 See comment at the end of this file for debugging code.
 """
 module ws_jce
-# We want to log to a separate file, and so use our own
-# instance of logutils_ws in this process
-import logutils_ws: logto, clog, zlog, zflush, clog_notime
-import Base.open
-using Serialization
-if !@isdefined(SRCPATH)
-    import WebSockets
-    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
-    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
-    SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
+
+if !@isdefined LOGGINGPATH
+    (@__DIR__) ∉ LOAD_PATH && push!(LOAD_PATH, @__DIR__)
+    const LOGGINGPATH = realpath(joinpath(@__DIR__, "..", "logutils"))
+    const LOGFILE = "ws_jce.log"
     LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
 end
-const LOGFILE = "ws_jce.log"
+
+import logutils_ws: logto, clog, zlog, zflush, clog_notime
+import Base.open
+using Serialization, Dates
+import WebSockets
 
 const PORT = 8000
 const SERVER = "ws://127.0.0.1:$(PORT)"
-using Dates
 const CLOSEAFTER = Second(30)
 
 """
@@ -50,7 +48,7 @@ function echowithdelay_jce()
     # sometimes before a line is finished printing.
     # We use :green to distinguish more easily.
     id = "echowithdelay_jce"
-    f = open(joinpath(SRCPATH, "logs", LOGFILE), "w")
+    f = open(joinpath(@__DIR__, "logs", LOGFILE), "w")
     try
         logto(f)
         clog(id, :green, "Open client on ", SERVER, "\nclient side handler ", _jce)
@@ -129,17 +127,10 @@ end
 end # module
 
 #=
-For debugging in a separate terminal:
+#For debugging in a separate terminal:
 
-import WebSockets:WebSocket
-if !@isdefined(SRCPATH)
-    import WebSockets.WebSocket
-    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
-    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
-    SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
-    LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
-end
-
-import ws_jce.echowithdelay_jce
+joinpath("WebSockets" |> Base.find_package |> dirname, "..", "benchmark") |> cd
+(@__DIR__) ∉ LOAD_PATH && push!(LOAD_PATH, @__DIR__)
+import ws_jce: echowithdelay_jce
 echowithdelay_jce()
 =#

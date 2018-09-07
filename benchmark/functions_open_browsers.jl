@@ -1,9 +1,8 @@
-# Included in benchmark_prepare.jl and in browsertests.jl
+# Included in benchmark_prepare.jl
 # Refers logutils
-if !@isdefined(SRCPATH)
-    import WebSockets.WebSocket
-    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
-    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
+if !@isdefined SRCPATH
+    const SRCPATH = @__DIR__
+    const LOGGINGPATH = realpath(joinpath(SRCPATH, "..", "logutils"))
     SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
     LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
 end

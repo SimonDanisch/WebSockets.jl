@@ -410,3 +410,12 @@ include("log_ws.jl")
 
 nothing
 end # module
+"""
+#For debugging :
+
+joinpath("WebSockets" |> Base.find_package |> dirname, "..", "logutils") |> cd
+(@__DIR__) ∉ LOAD_PATH && push!(LOAD_PATH, @__DIR__)
+using logutils_ws
+clog("Test", "Hello")
+
+"""

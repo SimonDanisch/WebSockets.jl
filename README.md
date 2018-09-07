@@ -26,7 +26,7 @@ julia> using WebSockets
 julia> varinfo(WebSockets)
 help?> serve
 help?> WebSockets.open
-julia> cd(joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "examples"))
+julia> joinpath("WebSockets" |> Base.find_package |> dirname, "..", "examples") |> cd
 julia> readdir()
 julia> include("chat_explore.jl")
 ```

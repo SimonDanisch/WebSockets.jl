@@ -5,7 +5,11 @@
 # running echo tests with that client.
 # The server stays open until close_hts or the websocket is closed.
 module ws_hts
-#using ..HTTP
+if !@isdefined LOGGINGPATH
+    (@__DIR__) ∉ LOAD_PATH && push!(LOAD_PATH, @__DIR__)
+    const LOGGINGPATH = realpath(joinpath(@__DIR__, "..", "logutils"))
+    LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
+end
 import HTTP: Header,
              Sockets.TCPServer,
              listen,
@@ -22,13 +26,7 @@ using Dates
 # We want to log to a separate file, so
 # we use our own instance of logutils_ws here (not really working...? Check this!).
 import logutils_ws: logto, clog, zlog, zflush, clog_notime
-if !@isdefined(SRCPATH)
-    import WebSockets.WebSocket
-    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
-    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
-    SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
-    LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
-end
+export listen_hts, getws_hts
 
 const SERVEFILE = "bce.html"
 const PORT = 8000
@@ -43,14 +41,19 @@ function listen_hts()
         clog(id,"listen_hts starts on ", SERVER, ":", PORT)
         zflush()
         listen(SERVER, UInt16(PORT), tcpref = TCPREF) do http
+            zlog(id, "received request, argument of type ", :bold, typeof(http))
             if is_upgrade(http.message)
+                zlog(id, "That is an upgrade!")
                 acceptholdws(http)
                 clog(id, "Websocket closed, server stays open until ws_hts.close_hts()")
             else
-                handle_request(handlerequest, http)
+                zlog(id, "That is not an upgrade!")
+                handle_request(handle, http)
+                zlog(id, "It has been handled!")
             end
         end
     catch err
+        zlog(id, :red, "Ouch, an error!")
         clog(id, :red, err)
         clog_notime.(stacktrace(catch_backtrace())[1:4])
         zflush()
@@ -114,9 +117,9 @@ end
 
 
 "HTTP request -> HTTP response."
-function handlerequest(request::Request)
-    id = "handlerequest"
-    zlog(id, request)
+function handle(request)
+    id = "handle"
+    zlog(id, "The type of request is", typeof(request))
     response = responseskeleton(request)
     try
         if request.method == "GET"
@@ -127,9 +130,11 @@ function handlerequest(request::Request)
         else
             response = Response(501, "Not implemented method: $(request.method), fix $id")
         end
-    catch
+    catch err
+        zlog(id, :red, "Error",  stacktrace(catch_backtrace())[1:4]...)
     end
     zlog(id, response)
+    zlog(id, "The type of response is ", typeof(response))
     response
 end
 
@@ -147,6 +152,7 @@ end
 "request.target -> HTTP.Response , building on a skeleton response"
 function resp_HTTP(resource::String, resp::Response)
     id = "resp_HTTP"
+    zlog(id, "Well, we got the request for resource ", resource)
     if resource == "/favicon.ico"
         s = read(joinpath(SRCPATH, "favicon.ico"))
         push!(resp.headers, "Content-Type" => "image/x-icon")
@@ -169,15 +175,10 @@ end
 
 end # module
 """
-For debugging in a separate console:
-
-if !@isdefined(SRCPATH)
-    import WebSockets.WebSocket
-    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
-    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
-end
-
-import ws_hts.listen_hts
+# For debugging in a separate console:
+joinpath("WebSockets" |> Base.find_package |> dirname, "..", "benchmark") |> cd
+(@__DIR__) ∉ LOAD_PATH && push!(LOAD_PATH, @__DIR__)
+import ws_hts: listen_hts, get_hts
 tas = @async listen_hts()
 sleep(7)
 hts = ws_hts.getws_hts()

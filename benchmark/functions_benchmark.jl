@@ -16,6 +16,10 @@ import WebSockets: readguarded,
                    WebSocket
 tabulate(vars) = table(hcat(eval.(vars)...), colnames = string.(vars))
 
+firstmatch(coll, value) = something(findfirst(isequal(value), coll), 0)
+
+
+
 "Adds process 2, same LOAD_PATH as process 1"
 function prepareworker()
     # Prepare worker

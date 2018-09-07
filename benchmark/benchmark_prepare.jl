@@ -9,16 +9,14 @@
 # Pull request welcome if someone can figure out how to do it.
 # Running this file on a Windows laptop with all browsers takes 5-10 minutes.
 
-if !@isdefined SRCPATH
-    import WebSockets.WebSocket
-    const SRCPATH = Base.source_dir() == nothing ? joinpath((WebSockets |> Base.pathof |> splitdir)[1],  "..", "benchmark") : Base.source_dir()
-    const LOGGINGPATH = realpath(joinpath(SRCPATH, "../logutils/"))
-    SRCPATH ∉ LOAD_PATH && push!(LOAD_PATH, SRCPATH)
+if !@isdefined LOGGINGPATH
+    (@__DIR__) ∉ LOAD_PATH && push!(LOAD_PATH, @__DIR__)
+    const LOGGINGPATH = realpath(joinpath(@__DIR__, "..", "logutils"))
     LOGGINGPATH ∉ LOAD_PATH && push!(LOAD_PATH, LOGGINGPATH)
-    include(joinpath(SRCPATH, "functions_open_browsers.jl"))
-    include(joinpath(SRCPATH, "functions_benchmark.jl"))
 end
 
+include("functions_open_browsers.jl")
+include("functions_benchmark.jl")
 
 "A vector of message sizes"
 const VSIZE = reverse([i^3 * 1020 for i = 1:12])
@@ -55,7 +53,7 @@ Prepare logging for this process
 """
 const ID = "Benchmark"
 const LOGFILE = "benchmark_prepare.log"
-global fbm = open(joinpath(SRCPATH, "logs", LOGFILE), "w")
+global fbm = open(joinpath(@__DIR__, "logs", LOGFILE), "w")
 logto(fbm)
 clog(ID, "Started async HTS and prepared parallel worker")
 zflush()
@@ -162,17 +160,17 @@ end
 #
 for msgsiz in VSIZE
     COUNTBROWSER.value = 0
-    t1 = Vector{Int}()
-    t2 = Vector{Int}()
-    t3 = Vector{Int}()
-    t4 = Vector{Int}()
-    browser = ""
-    alright = true
+    global t1 = Vector{Int}()
+    global t2 = Vector{Int}()
+    global t3 = Vector{Int}()
+    global t4 = Vector{Int}()
+    global browser = ""
+    global alright = true
     while alright
         # Measured time interval vectors [ns] for the next browser in line
         # Time measurements are taken only at server; a message pattern
         # is used to distinguish server and client performance
-        (browser, t1, t2, t3, t4) = HTS_BCE(SAMPLES, msgsiz)
+        global browser, t1, t2, t3, t4 = HTS_BCE(SAMPLES, msgsiz)
         testid = "HTS_BCE " * browser
         if browser != ""
             # Find averaged speed (bandwidth) scalars
@@ -199,8 +197,8 @@ end
 close_hts()
 clog(ID, "Closing HTS server")
 const RESULTFILE = "benchmark_results.log"
-clog(ID, "Results are summarized in ", joinpath(SRCPATH, "logs", RESULTFILE))
-fbmr = open(joinpath(SRCPATH, "logs", RESULTFILE), "w")
+clog(ID, "Results are summarized in ", joinpath(@__DIR__, "logs", RESULTFILE))
+fbmr = open(joinpath(@__DIR__, "logs", RESULTFILE), "w")
 logto(fbmr)
 close(fbm)
 
@@ -210,22 +208,22 @@ close(fbm)
 # Find optimum message size and nominal 100% bandwidths
 # Make and store plots and tables
 #
-test_bestserverbandwidths = Dict{String, Float64}()
-test_bestclientbandwidths = Dict{String, Float64}()
-test_bestserverlatencies = Dict{String, Float64}()
-test_bestclientlatencies = Dict{String, Float64}()
-test_plots = Dict()
-test_tables = Dict()
-test_latency_plots = Dict()
-test_latency_tables = Dict()
-serverbandwidth = Vector{Float64}()
-clientbandwidth = Vector{Float64}()
-serverlatency = Vector{Float64}()
-clientlatency = Vector{Float64}()
-bestserverbandwidth = 0.
-bestclientbandwidth = 0.
-bestserverlatency = 0.
-bestclientlatency = 0.
+global test_bestserverbandwidths = Dict{String, Float64}()
+global test_bestclientbandwidths = Dict{String, Float64}()
+global test_bestserverlatencies = Dict{String, Float64}()
+global test_bestclientlatencies = Dict{String, Float64}()
+global test_plots = Dict()
+global test_tables = Dict()
+global test_latency_plots = Dict()
+global test_latency_tables = Dict()
+global serverbandwidth = Vector{Float64}()
+global clientbandwidth = Vector{Float64}()
+global serverlatency = Vector{Float64}()
+global clientlatency = Vector{Float64}()
+global bestserverbandwidth = 0.
+global bestclientbandwidth = 0.
+global bestserverlatency = 0.
+global bestclientlatency = 0.
 
 for testid in keys(serverbandwidths)
     serverbandwidth = serverbandwidths[testid]
@@ -254,15 +252,21 @@ for testid in keys(serverbandwidths)
     push!(test_latency_tables,  testid => tabulate(tvars));
 
     # Brief output to file and console
+
+
+
+
+
+
     clog_notime(testid, :normal, " Varying message size: \n\t",
         "bestserverbandwidth = ", :yellow,  round(bestserverbandwidth, digits=4), :normal, " [ns/b] = [s/GB]",
-        " @ size = ", VSIZE[findfirst(serverbandwidth, bestserverbandwidth)], " b\n\t",
+        " @ size = ", VSIZE[firstmatch(serverbandwidth, bestserverbandwidth)], " b\n\t",
         :normal, "bestclientbandwidth = ", :yellow, round(bestclientbandwidth, digits=4), :normal, " [ns/b] = [s/GB]",
-        " @ size = ", VSIZE[findfirst(clientbandwidth, bestclientbandwidth)], " b\n\t",
+        " @ size = ", VSIZE[firstmatch(clientbandwidth, bestclientbandwidth)], " b\n\t",
         "bestserverlatency = ", :yellow,  Int(round(bestserverlatency)), :normal, " [ns] ",
-        " @ size = ", VSIZE[findfirst(serverlatency, bestserverlatency)], " b\n\t",
+        " @ size = ", VSIZE[firstmatch(serverlatency, bestserverlatency)], " b\n\t",
         :normal, "bestclientlatency = ", :yellow, Int(round(bestclientlatency)), :normal, " [ns]",
-        " @ size = ", VSIZE[findfirst(clientlatency, bestclientlatency)], " b\n\t"
+        " @ size = ", VSIZE[firstmatch(clientlatency, bestclientlatency)], " b\n\t"
         )
 end
 
