@@ -27,7 +27,7 @@ function gatekeeper(req, ws)
     println("\nOrigin:", orig, "    Target:", target(req), "    subprotocol:", subprotocol(req))
     if occursin(LOCALIP, orig)
         coroutine(ws)
-    elseif orig == "" 
+    elseif orig == ""
         @info "Non-browser clients don't send Origin. We liberally accept the update request in this case."
         coroutine(ws)
     else
@@ -37,7 +37,7 @@ end
 
 global handle(req) = replace(BAREHTML, "<body></body>" => BODY) |> WebSockets.Response
 
-global server = WebSockets.ServerWS(handle, 
+global server = WebSockets.ServerWS(handle,
                                     gatekeeper)
 
 @info("Browser > $LOCALIP:$PORT , F12> console > ws = new WebSocket(\"ws://$LOCALIP:$PORT\") ")

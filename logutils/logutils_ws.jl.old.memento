@@ -1,0 +1,65 @@
+# Precompilation-> segfaults. Due to rehashing, read-only. Hopefully changing
+# in the future.
+__precompile__(false)
+"""
+This defines specialized handler functions for Memento.
+It also adds zero overhead logging macros.
+"""
+module logutils_ws
+using Memento
+export main
+const LOGGINGPATH = realpath(joinpath(@__DIR__, "..", "logutils"))
+const FILENAME = "tryout.log"
+const F = joinpath(LOGGINGPATH * FILENAME)
+const LOG = Memento.config!("debug";  colorized = true)
+# Propagate = true to show REPL output. Not working.
+Memento.config!(LOG, "debug"; propagate = false)
+# Format log records. Working.
+Memento.config!(LOG, "debug";fmt ="[{date} | {level} | {name}]: {msg}")
+function main()
+    retu = nothing
+    info(LOG, "Got logger $LOG")
+    notice(LOG, "Running function...")
+    debug(LOG, "Something you might want to know")
+    notice(LOG, "This is probably pretty important")
+    warn(LOG, ErrorException("A caught exception"))
+    #error(LOG, "Something that should throw an error")
+    #critical(LOG, "The world is exploding")
+    retu
+end
+
+mutable struct MyHandler{F<:Formatter, O<:IO} <: Handler{F, O}
+    fmt::F
+    io::O
+end
+
+function emit(handler::MyHandler{F, O}, rec::Record) where {F<:Formatter, O<:IO}
+    str = Memento.format(handler.fmt, rec)
+    println(handler.io, str)
+    flush(handler.io)
+end
+
+
+
+
+function __init__()
+    Memento.register(LOG)
+end
+end
+
+#=
+"""
+logger = config!("debug"; fmt ="[{level} | {name}]: {msg}")
+debug(logger, "Something you might want to know")
+notice(logger, "This is probably pretty important")
+warn(logger, ErrorException("A caught exception"))
+error(logger, "Something that should throw an error")
+critical(logger, "The world is exploding")
+child_logger = getlogger("Foo.bar")
+setlevel!(child_logger, "warn")
+push!(child_logger, DefaultHandler(tempname(),
+    DefaultFormatter("[{date} | {level} | {name}]: {msg}")))
+debug(child_logger, "Something that should only be printed to STDOUT on the root_logger")
+warn(child_logger, "Warning to STDOUT and the log file.")
+"""
+=#
